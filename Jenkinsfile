@@ -5,7 +5,11 @@ pipeline {
         stage('Clean') {
             steps {
                 echo 'Cleaning..'
-                sh 'rm -r helloworld-pipeline'
+                script {
+                    try {
+                        sh 'rm -r helloworld-pipeline'
+                    }
+                }
             }
         }
         stage('Build') {
