@@ -18,6 +18,7 @@ sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins
 sudo rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
 sudo yum install -y jenkins
 sudo chkconfig jenkins on
+sudo usermod -aG docker jenkins
 
 sudo service docker start
 sudo service jenkins start
