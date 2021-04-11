@@ -30,8 +30,10 @@ pipeline {
             }
             steps {
                 echo 'Building HelloWorld Docker Image'
-                script {
-                    app = docker.build("vpec1/helloworld-rest-app")
+                dir('helloworld-rest') {
+                    script {
+                        app = docker.build("vpec1/helloworld-rest-app")
+                    }
                 }
             }
         }
