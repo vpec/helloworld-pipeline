@@ -54,6 +54,9 @@ pipeline {
             }
         }
         stage('Remove local images') {
+            when {
+                branch 'develop'
+            }
             steps {
                 echo 'Delete the local docker images'
                 sh("docker rmi -f vpec1/helloworld-rest-app:latest || :")
