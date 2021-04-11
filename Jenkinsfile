@@ -8,6 +8,10 @@ pipeline {
                 script {
                     try {
                         sh 'rm -r helloworld-pipeline'
+                        echo 'Previous repo clone deleted'
+                    }
+                    catch {
+                        echo 'No previous repo clone was found'
                     }
                 }
             }
