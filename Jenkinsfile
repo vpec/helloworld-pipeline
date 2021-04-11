@@ -26,7 +26,7 @@ pipeline {
         }
         stage('Build Docker Image') {
             when {
-                branch 'feature/docker'
+                branch 'develop'
             }
             steps {
                 echo 'Building HelloWorld Docker Image'
@@ -39,7 +39,7 @@ pipeline {
         }
         stage('Push Docker Image') {
             when {
-                branch 'feature/docker'
+                branch 'develop'
             }
             steps {
                 echo 'Pushing HelloWorld Docker Image'
