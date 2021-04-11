@@ -29,7 +29,7 @@ pipeline {
                 branch 'feature/docker'
             }
             steps {
-                echo '=== Building HelloWorld Docker Image ==='
+                echo 'Building HelloWorld Docker Image'
                 script {
                     app = docker.build("vpec1/helloworld-rest-app")
                 }
@@ -40,7 +40,7 @@ pipeline {
                 branch 'feature/docker'
             }
             steps {
-                echo 'Pushing HelloWorld Docker Image' ===''
+                echo 'Pushing HelloWorld Docker Image'
                 script {
                     GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
                     SHORT_COMMIT = "${GIT_COMMIT_HASH[0..7]}"
