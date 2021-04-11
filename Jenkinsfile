@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent any {
+        triggers {
+            pollSCM "* * * * *"
+        }
+    }
 
     stages {
         stage('Clean') {
