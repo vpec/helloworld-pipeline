@@ -10,7 +10,7 @@ pipeline {
                         sh 'rm -r helloworld-pipeline'
                         echo 'Previous repo clone deleted'
                     }
-                    finally {
+                    catch (exc) { {
                         echo 'No previous repo clone was found'
                     }
                 }
