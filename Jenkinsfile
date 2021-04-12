@@ -14,7 +14,8 @@ pipeline {
                         invokeLambda([awsRegion: 'us-east-2',
                             functionName: 'lambda_deployment_trigger', 
                             synchronous: true, 
-                            useInstanceCredentials: true])
+                            useInstanceCredentials: true,
+                            returnValueAsString: true])
                     }
                 }
             }
