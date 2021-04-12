@@ -1,4 +1,10 @@
 pipeline {
+    /*
+     * Note: This pipeline does not use any nodes for executing stages.
+     * This was tested on a single EC2 instance with limited resources.
+     * In a production environment, every pipeline workload should be
+     * executed from within a node.
+     */
     agent any
         triggers {
             // Trigger every 15 minutes
