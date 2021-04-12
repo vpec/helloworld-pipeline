@@ -13,7 +13,6 @@ pipeline {
                     withAWS(credentials:'awsCredentials') {
                         invokeLambda([awsRegion: 'us-east-2',
                             functionName: 'lambda_deployment_trigger', 
-                            payload: "{}", 
                             synchronous: true, 
                             useInstanceCredentials: true])
                     }
