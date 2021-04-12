@@ -50,9 +50,9 @@ pipeline {
                         app.push("$SHORT_COMMIT")
                         app.push("latest")
                     }
-                    //aws lambda invoke --function-name demo-function --region us-east-2 --payload '{}' response
+                    //aws lambda invoke --function-name lambda_deployment_trigger --region us-east-2 --payload '{}' response
                     sh(script:
-                        "aws lambda invoke --function-name demo-function --region us-east-2 --payload '{}' /tmp/response.json")
+                        "aws lambda invoke --function-name lambda_deployment_trigger --region us-east-2 --payload '{}' /tmp/response.json")
                 }
             }
         }
