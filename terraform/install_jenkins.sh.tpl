@@ -1,5 +1,4 @@
 #!/bin/bash
-touch testfile
 sudo yum -y update
 
 echo "Install Java JDK 8"
@@ -9,7 +8,7 @@ sudo yum install -y java-1.8.0-openjdk-devel
 echo "Install git"
 sudo yum install -y git
 
-echo "Install Docker engine"
+echo "Install Docker"
 sudo yum install docker -y
 sudo chkconfig docker on
 

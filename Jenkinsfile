@@ -37,7 +37,7 @@ pipeline {
                 }
             }
         }
-        stage('Push Docker Image') {
+        stage('Push Docker Image & Trigger deployment') {
             when {
                 branch 'develop'
             }
@@ -50,9 +50,16 @@ pipeline {
                         app.push("$SHORT_COMMIT")
                         app.push("latest")
                     }
-                    //aws lambda invoke --function-name lambda_deployment_trigger --region us-east-2 --payload '{}' response
-                    sh(script:
-                        "aws lambda invoke --function-name lambda_deployment_trigger --region us-east-2 --payload '{}' /tmp/response.json")
+                }
+                echo 'Trigger lambda deployment function'
+                script {
+                    withAWS(credentials:'awsCredentials') {
+                        invokeLambda([awsRegion: 'us-east-2',
+                            functionName: 'lambda_deployment_trigger', 
+                            synchronous: true, 
+                            useInstanceCredentials: true,
+                            returnValueAsString: true])
+                    }
                 }
             }
         }
