@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Push Docker Image') {
             when {
-                branch 'develop'
+                branch 'feature/lambda'
             }
             steps {
                 echo 'Pushing HelloWorld Docker Image'
