@@ -16,8 +16,6 @@ pipeline {
                             payload: "{}", 
                             synchronous: true, 
                             useInstanceCredentials: true])
-                        sh(script:
-                        "aws lambda invoke --function-name lambda_deployment_trigger --region us-east-2 --payload '{}' /tmp/response.json")
                     }
                 }
             }
