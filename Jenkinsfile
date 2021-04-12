@@ -8,14 +8,18 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                echo 'Building...'
-                sh 'cd helloworld-rest && ./gradlew build --no-daemon'
+                node {
+                    echo 'Building...'
+                    sh 'cd helloworld-rest && ./gradlew build --no-daemon'
+                }
             }
         }
         stage('Test') {
             steps {
-                echo 'Testing...'
-                sh 'cd helloworld-rest && ./gradlew test --no-daemon'
+                node {
+                    echo 'Testing...'
+                    sh 'cd helloworld-rest && ./gradlew test --no-daemon'
+                }
             }
         }
         stage('Deploy') {
@@ -23,35 +27,37 @@ pipeline {
                 branch 'develop'
             }
             steps {
-                echo 'Deploying...'
-                echo 'Building HelloWorld Docker Image'
-                dir('helloworld-rest') {
+                node {
+                    echo 'Deploying...'
+                    echo 'Building HelloWorld Docker Image'
+                    dir('helloworld-rest') {
+                        script {
+                            app = docker.build("vpec1/helloworld-rest-app")
+                        }
+                    }
+                    echo 'Pushing HelloWorld Docker Image'
                     script {
-                        app = docker.build("vpec1/helloworld-rest-app")
+                        GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
+                        SHORT_COMMIT = "${GIT_COMMIT_HASH[0..7]}"
+                        docker.withRegistry('https://registry.hub.docker.com', 'dockerHubCredentials') {
+                            app.push("$SHORT_COMMIT")
+                            app.push("latest")
+                        }
                     }
-                }
-                echo 'Pushing HelloWorld Docker Image'
-                script {
-                    GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
-                    SHORT_COMMIT = "${GIT_COMMIT_HASH[0..7]}"
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerHubCredentials') {
-                        app.push("$SHORT_COMMIT")
-                        app.push("latest")
+                    echo 'Trigger lambda deployment function'
+                    script {
+                        withAWS(credentials:'awsCredentials') {
+                            invokeLambda([awsRegion: 'us-east-2',
+                                functionName: 'lambda_deployment_trigger', 
+                                synchronous: true, 
+                                useInstanceCredentials: true,
+                                returnValueAsString: true])
+                        }
                     }
+                    echo 'Delete the local docker images'
+                    sh("docker rmi -f vpec1/helloworld-rest-app:latest || :")
+                    sh("docker rmi -f vpec1/helloworld-rest-app:$SHORT_COMMIT || :")
                 }
-                echo 'Trigger lambda deployment function'
-                script {
-                    withAWS(credentials:'awsCredentials') {
-                        invokeLambda([awsRegion: 'us-east-2',
-                            functionName: 'lambda_deployment_trigger', 
-                            synchronous: true, 
-                            useInstanceCredentials: true,
-                            returnValueAsString: true])
-                    }
-                }
-                echo 'Delete the local docker images'
-                sh("docker rmi -f vpec1/helloworld-rest-app:latest || :")
-                sh("docker rmi -f vpec1/helloworld-rest-app:$SHORT_COMMIT || :")
             }
         }
     }
