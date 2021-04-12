@@ -10,9 +10,15 @@ pipeline {
             steps {
                 echo 'Pushing HelloWorld Docker Image'
                 script {
-                    //aws lambda invoke --function-name lambda_deployment_trigger --region us-east-2 --payload '{}' response
-                    sh(script:
+                    withAWS(credentials:'awsCredentials') {
+                        invokeLambda([awsRegion: 'us-east-2',
+                            functionName: 'lambda_deployment_trigger', 
+                            payload: "{}", 
+                            synchronous: true, 
+                            useInstanceCredentials: true])
+                        sh(script:
                         "aws lambda invoke --function-name lambda_deployment_trigger --region us-east-2 --payload '{}' /tmp/response.json")
+                    }
                 }
             }
         }
