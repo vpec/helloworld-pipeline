@@ -8,40 +8,28 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                echo 'Building..'
+                echo 'Building...'
                 sh 'cd helloworld-rest && ./gradlew build --no-daemon'
-                sh 'ls helloworld-rest/build/libs'
             }
         }
         stage('Test') {
             steps {
-                echo 'Testing..'
+                echo 'Testing...'
                 sh 'cd helloworld-rest && ./gradlew test --no-daemon'
             }
         }
         stage('Deploy') {
-            steps {
-                echo 'Deploying....'
-            }
-        }
-        stage('Build Docker Image') {
             when {
                 branch 'develop'
             }
             steps {
+                echo 'Deploying...'
                 echo 'Building HelloWorld Docker Image'
                 dir('helloworld-rest') {
                     script {
                         app = docker.build("vpec1/helloworld-rest-app")
                     }
                 }
-            }
-        }
-        stage('Push Docker Image & Trigger deployment') {
-            when {
-                branch 'develop'
-            }
-            steps {
                 echo 'Pushing HelloWorld Docker Image'
                 script {
                     GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
@@ -61,13 +49,6 @@ pipeline {
                             returnValueAsString: true])
                     }
                 }
-            }
-        }
-        stage('Remove local images') {
-            when {
-                branch 'develop'
-            }
-            steps {
                 echo 'Delete the local docker images'
                 sh("docker rmi -f vpec1/helloworld-rest-app:latest || :")
                 sh("docker rmi -f vpec1/helloworld-rest-app:$SHORT_COMMIT || :")
