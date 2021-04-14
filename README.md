@@ -11,7 +11,7 @@ The main elements are located in the following folders:
 
 **IMPORTANT NOTES**
 1. This project has been created and tested on a Linux host machine (Debian 10). Some commands, scripts or steps may differ if you are running a different OS on your machine.
-2. Currently new AWS accounts have a limited ammount of cpu instances that can be active at the same time: just 1 cpu instance. Changing this limit takes some time as you need to talk to technical support in order to get it changed. The initial idea of this project was to deploy the different parts (CI/CD pipeline and Kubernetes cluster) to AWS, so the integration between them would be easier. As this has not been possible due to the limitation, some parts of the resulting system are not completely integrated. For example, instead of running the Kubernetes cluster in Amazon EKS, I have used minikube to deploy a local cluster. 
+2. Currently new AWS accounts have a limited amount of cpu instances that can be active at the same time: just 1 cpu instance. Changing this limit takes some time as you need to talk to technical support in order to get it changed. The initial idea of this project was to deploy the different parts (CI/CD pipeline and Kubernetes cluster) to AWS, so the integration between them would be easier. As this has not been possible due to the limitation, some parts of the resulting system are not completely integrated. For example, instead of running the Kubernetes cluster in Amazon EKS, I have used minikube to deploy a local cluster. 
 
 ## HelloWorld REST application
 
