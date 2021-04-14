@@ -9,6 +9,10 @@ The main elements are located in the following folders:
 - terraform: continuous integration pipeline. Contains terraform manifests for deploying the pipeline to AWS. Currently launches an EC2 instance on which a Jenkins server is automatically created. It also creates a lambda function in AWS that is used to facilitate continuous deployment.
 - kubernetes: manifests to create a Kubernetes cluster on which the helloworld application is deployed.
 
+**IMPORTANT NOTES**
+1. This project has been created and tested on a Linux host machine (Debian 10). Some commands, scripts or steps may differ if you are running a different OS on your machine.
+2. Currently new AWS accounts have a limited ammount of cpu instances that can be active at the same time: just 1 cpu instance. Changing this limit takes some time as you need to talk to technical support in order to get it changed. The initial idea of this project was to deploy the different parts (CI/CD pipeline and Kubernetes cluster) to AWS, so the integration between them would be easier. As this has not been possible due to the limitation, some parts of the resulting system are not completely integrated. For example, instead of running the Kubernetes cluster in Amazon EKS, I have used minikube to deploy a local cluster. 
+
 ## HelloWorld REST application
 
 To test the pipeline and deployment, a simple Spring Boot application has been created. After running it,  it returns "Hello World!" as a response when a request is made. Gradle has been used as build tool. Also a test folder was created. It contains a single very simple test that is executed with `gradle test`. The purpose of this test is to use it in the pipeline to symbolize the execution of automated tests in a real application.
@@ -44,20 +48,20 @@ It contains 3 steps: Build, Test and Deploy.
 1. Build: Executes gradle build, creating a jar file that contains the Spring Boot application.
 2. Test: Runs automated tests. In this case it only executes the simple test mentioned in the beginning of this ReadMe.
 3. Deploy: It builds a docker image (using a Dockerfile) of the helloworld application build (jar file). It pushes the image to the DockerHub public registry. It pushes 2 images: one tagged with the commit ID, and another one tagged as 'latest'. It triggers the lambda function (this is intended to notify Kubernetes cluster so it pulls the new 'latest' image. Finally it removes the local docker images. 
-**NOTE:** This last step (Deploy) only is executed if the branch is 'main', because usually a commit to the main branch of a repository means that it is a version ready for production deployment. Other branches could be configured too. For example, a commit de 'develop' could trigger a deployment to a UAT environment.
+**NOTE:** This last step (Deploy) only is executed if the branch is 'main', because usually a commit to the main branch of a repository means that it is a version ready for production deployment. Other branches could be configured too. For example, a commit from 'develop' could trigger a deployment to a UAT environment.
   
 Lambda Function: The role of the lambda function here is to trigger Kubernetes cluster update. The initial idea was to deploy the Kubernetes cluster into Amazon EKS (Elastic Kubernetes Service), but because of the limitations of cpu instances in new AWS accounts I couldn't test it. Deploying to EKS would get greater integration between the lambda function, Jenkins server and the cluster. At this moment, this trigger is not implemented. The function contains simply a hello world handler in NodeJS. The idea would be to execute `kubectl apply -f deployment.yaml`, so the new helloworld-rest-app:latest images would be deployed into the cluster.
 
 ## Kubernetes deployment
 
-  So far we have created helloworld REST application and Jenkins pipeline to provide CI/CD, now it's the moment at how the application is actually deployed. As I said before, the original idea of this project was to use Amazon EKS. As it hasn't been possible, I created a local Kubernetes cluster using [minikube](https://minikube.sigs.k8s.io/docs/) to test my solution.
+So far we have created helloworld REST application and Jenkins pipeline to provide CI/CD, now it's the moment at how the application is actually deployed. As I said before, the original idea of this project was to use Amazon EKS. As it hasn't been possible, I created a local Kubernetes cluster using [minikube](https://minikube.sigs.k8s.io/docs/) to test my solution.
 
 First of all, initialize Kubernetes cluster with minikube (in this example VirtualBox is being used as driver).
 ```
 $ minikube start
 ```
 
-Deploy ElasticSearch and Kibana servers using docker-compose. More info about this in the [Logging and Monitoring](logging-and-monitoring) section.
+Deploy ElasticSearch and Kibana servers using docker-compose. More info about this in the [Logging and Monitoring](#logging-and-monitoring) section.
 ```
 $ sudo docker-compose -f efk/docker-compose.yaml up -d
 ```
@@ -79,7 +83,7 @@ Deploy fluentd daemonset to the minikube cluster.
 $ kubectl apply -f kubernetes/fluentd-daemonset.yaml
 ```
 
-Deploy the helloworld app to the minikube active cluster.
+Deploy the helloworld app to the minikube active cluster. This manifest deploys 3 replicas of the helloworld app.
 ```
 $ kubectl apply -f kubernetes/helloworld-deployment.yaml
 ```
@@ -121,27 +125,7 @@ Go to the Discover tab, and you will see the logs there. If you only want to see
 
 This way you will be able to see application logs as it is shown in the image.
 ![visualization of application logs !](images/kibana_app_logs.png)
-  
-  
-
-
-
-
-
-
-To receive alerts. metricbeat is installed, and you kibana license needs to be upgraded (there is a 30 day trial available).
-Once your license is upgraded, you can now use Watcher feature.
-
-
-kubectl create -f kubernetes/metricbeat.yaml
-
-kubectl --namespace=kube-system  get ds/metricbeat
-
 
 ## Alerting
 
-```
-curl -L -O https://artifacts.elastic.co/downloads/beats/heartbeat/heartbeat-7.6.2-darwin-x86_64.tar.gz
-tar xzvf heartbeat-7.6.2-darwin-x86_64.tar.gz
-cd heartbeat-7.6.2-darwin-x86_64/
-```
+To get alerts based on different parameters of events, two things are needed: collect metrics, and create an alert based on some rule. For example, to get information about uptime of your application, you can install HeartBeat to collect these metrics, and then create a Watcher. In order to create a Watcher, you may need to upgrade your Kibana license (there is a 30 day trial available). Once your license is upgraded, you can now use Watcher feature.
