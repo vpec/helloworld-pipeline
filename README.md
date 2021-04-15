@@ -156,7 +156,7 @@ Go to the Discover tab, and you will see the logs there. If you only want to see
 This way you will be able to see application logs as it is shown in the image (the moment I took the screenshot I was running only 3 replicas, that's why only 3 containers appear on the left).
 ![visualization of application logs !](images/kibana_app_logs.png)
 
-## Alerting
+### Alerting
 
 To get alerts based on different parameters of events, two things are needed: collect metrics, and create an alert based on some rule. For example, to get information about uptime of your application, you can install HeartBeat to collect these metrics, and then create a Watcher. 
 
