@@ -29,6 +29,9 @@ $ terraform plan
 $ terraform apply -auto-approve
 ```
 
+Once `terraform apply` finishes, it will print the URL to access the EC2 instance
+![Jenkins EC2 instance URL!](images/ec2_deployed.png)
+
 To run this commands you have to configure first `the home/user/.aws/credentials` file, as you need some credentials to deploy to AWS.
 
 The Terraform manifests also include a script (_install_jenkins.sh.tpl_) that is injected into the EC2 instance, which is executed right after being deployed. This script installs Jenkins and Docker in the virtual machine, and creates a Jenkins service.
@@ -40,24 +43,32 @@ However, some manual steps have to be done once the instance is deployed in orde
 3. Access to Jenkins (port 8080 by default) and install these plugins: GitHub, Docker, Docker API, Docker Pipeline, Pipeline: AWS Steps.
 4. Set up your Docker Hub Credentials on Jenkins: Click Credentials -> global -> Add Credentials, choose Username with password as Kind, enter the Docker Hub username and password and use `dockerHubCredentials` for ID.
 5. Set up your AWS Credentials on Jenkins: Click Credentials -> global -> Add Credentials, choose Username with password as Kind, enter the username (aws_access_key_id) and password (aws_secret_access_key) and use `awsCredentials` for ID.
-6. **Create the pipeline**. Click New item -> Multibranch pipeline. Add GitHub source and specify your repo URL (if your repo is private you will have to provide credentials). In this case I used this repo. Apply and save your changes.
+6. **Create the pipeline**. Click New item -> Multibranch pipeline. Add GitHub source and specify your repo URL (if your repo is private you will have to provide credentials). In this case I used this repo.
+![Jenkins pipeline git source!](images/jenkins_git_source.png)
+Apply and save your changes.
 7. If the pipeline Git scanning step doesn't work properly, you might have to change GitHub API request limit: Click Configure System -> GitHub API usage -> Select Throttle at/near rate limit.
 
 ### Pipeline structure
 The pipeline created above is a Multibranch Pipeline. This type of pipeline scans all branches of the specified repository, and creates for each of them a pipeline based on a Jenkinsfile. Jenkins periodically polls the remote repository and executes the pipeline if a new commit has been made to any of the branches.
+
+![Multi branch pipeline!](images/multibranch_pipeline.png)
 
 Let's take a look at the pipeline I designed for this project.
 
 It contains 3 steps: Build, Test and Deploy. 
 1. **Build**: Executes gradle build, creating a jar file that contains the Spring Boot application.
 2. **Test**: Runs automated tests. In this case it only executes the simple test mentioned in the beginning of this ReadMe.
-3. **Deploy**: It builds a docker image (using a Dockerfile) of the helloworld application build (jar file). It pushes the image to the DockerHub public registry. It pushes 2 images: one tagged with the commit ID, and another one tagged as 'latest'. It triggers the lambda function (this is intended to notify Kubernetes cluster so it pulls the new 'latest' image. Finally it removes the local docker images. 
+3. **Deploy**: It builds a docker image (using a Dockerfile) of the helloworld application build (jar file). It pushes the image to the DockerHub public registry. It pushes 2 images: one tagged with the commit ID, and another one tagged as 'latest'. It triggers the lambda function (this is intended to notify Kubernetes cluster so it pulls the new 'latest' image). Finally it removes the local docker images. 
+
+![Uploaded docker images!](images/dockerhub_registry.png)
 
 This last step (Deploy) is only executed if the branch is 'main', because usually a commit to the main branch of a repository means that it is a version ready for production deployment. Other branches could be configured too. For example, a commit from 'develop' could trigger a deployment to a UAT environment.
 
 **NOTE:** As it is mentioned in the Jenkinsfile, every pipeline workload should be executed from within an isolated node, as it is considered a best practice. In this case, as the Free Tier EC2 instance resources were so limited, I didn't follow this practice. Also, in a real environment it would be advisable to deploy the Jenkins server following a master-worker architecture, and execute these heavy pipeline workloads inside the worker nodes.
   
 Lambda Function: The role of the lambda function here is to trigger Kubernetes cluster update. The initial idea was to deploy the Kubernetes cluster into Amazon EKS (Elastic Kubernetes Service), but because of the limitations of cpu instances in new AWS accounts I couldn't test it. Deploying to EKS would get greater integration between the lambda function, Jenkins server and the cluster. At this moment, this trigger is not implemented. The function contains simply a hello world handler in NodeJS. The idea would be to execute `kubectl apply -f deployment.yaml`, so the new helloworld-rest-app:latest images would be deployed into the cluster.
+
+![Lambda function execution!](images/lambda_call.png)
 
 ## Kubernetes deployment
 
@@ -84,6 +95,8 @@ env:
 	- name: FLUENT_ELASTICSEARCH_HOST
 	value: "10.0.2.2"  # REPLACE with host of your elasticsearch server
 ```
+
+Note: The next 3 commands can be executed from the script named *init_kubernetes.sh*.
 
 Deploy fluentd daemonset to the minikube cluster.
 ```
@@ -135,6 +148,8 @@ This way you will be able to see application logs as it is shown in the image.
 
 ## Alerting
 
-To get alerts based on different parameters of events, two things are needed: collect metrics, and create an alert based on some rule. For example, to get information about uptime of your application, you can install HeartBeat to collect these metrics, and then create a Watcher. In order to create a Watcher, you may need to upgrade your Kibana license (there is a 30 day trial available). Once your license is upgraded, you can now use Watcher feature.
+To get alerts based on different parameters of events, two things are needed: collect metrics, and create an alert based on some rule. For example, to get information about uptime of your application, you can install HeartBeat to collect these metrics, and then create a Watcher. 
 
-These Watchers cand integrate with common communication apps (e.g. Slack) so get notified every time the application goes down.
+To simplify HeartBeat installation, a script named *install_heartbeat.sh* is included in this repo.
+
+In order to create a Watcher, you may need to upgrade your Kibana license (there is a 30 day trial available). Once your license is upgraded, you can now use Watcher feature. These Watchers can integrate with common communication apps (e.g. Slack) so get notified every time the application goes down.

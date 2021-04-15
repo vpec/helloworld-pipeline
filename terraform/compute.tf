@@ -19,7 +19,7 @@ data "aws_ami" "amazon-linux-2" {
 
 resource "aws_instance" "jenkins-instance" {
   ami             = "${data.aws_ami.amazon-linux-2.id}"
-  instance_type   = "t2.micro" # REPLACE WITH DESIRED EC2 INSTANCE TYPE
+  instance_type   = "t3.small" # REPLACE WITH DESIRED EC2 INSTANCE TYPE
   key_name        = "vpec-key" # REPLACE WITH YOUR KEY NAME
   vpc_security_group_ids = ["${aws_security_group.sg_allow_ssh_jenkins.id}"]
   subnet_id          = "${aws_subnet.public-subnet-1.id}"
