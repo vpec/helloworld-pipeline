@@ -6,7 +6,7 @@ Technologies used in this project are: Spring Boot, Terraform, Jenkins, AWS EC2,
 
 The main elements are located in the following folders:
 - helloworld-rest: spring boot application with an endpoint ("/") that returns the string "Hello World!".
-- terraform: continuous integration pipeline. Contains terraform manifests for deploying the pipeline to AWS. Currently launches an EC2 instance on which a Jenkins server is automatically created. It also creates a lambda function in AWS that is used to facilitate continuous deployment.
+- terraform: continuous integration pipeline. It contains terraform manifests for deploying the pipeline to AWS. Currently launches an EC2 instance on which a Jenkins server is automatically created. It also creates a lambda function in AWS that is used to facilitate continuous deployment.
 - kubernetes: manifests to create a Kubernetes cluster on which the helloworld application is deployed.
 
 **IMPORTANT NOTES**
@@ -17,6 +17,8 @@ The main elements are located in the following folders:
 
 To test the pipeline and deployment, a simple Spring Boot application has been created. After running it,  it returns "Hello World!" as a response when a request is made. Gradle has been used as build tool. Also a test folder was created. It contains a single very simple test that is executed with `gradle test`. The purpose of this test is to use it in the pipeline to symbolize the execution of automated tests in a real application.
 
+The application.properties file specifies to print Tomcat server logs to `stdout`. The reason for this decision is explained in the [Logging and Monitoring](#logging-and-monitoring) section.
+
 ## CI/CD Jenkins Pipeline
 
 I have used Jenkins for the creation of the pipeline. To host the Jenkins server I used an AWS EC2 (Free Tier) instance. The deployment of this instance has been done taking into account the concept of Infrastructure as Code. Terraform has been used to specify the details of the infrastructure. To perform the deployment simply run these commands from the main directory of the repo:
@@ -26,6 +28,8 @@ $ terraform init
 $ terraform plan
 $ terraform apply -auto-approve
 ```
+
+To run this commands you have to configure first `the home/user/.aws/credentials` file, as you need some credentials to deploy to AWS.
 
 The Terraform manifests also include a script (_install_jenkins.sh.tpl_) that is injected into the EC2 instance, which is executed right after being deployed. This script installs Jenkins and Docker in the virtual machine, and creates a Jenkins service.
 
@@ -45,11 +49,11 @@ The pipeline created above is a Multibranch Pipeline. This type of pipeline scan
 Let's take a look at the pipeline I designed for this project.
 
 It contains 3 steps: Build, Test and Deploy. 
-1. Build: Executes gradle build, creating a jar file that contains the Spring Boot application.
-2. Test: Runs automated tests. In this case it only executes the simple test mentioned in the beginning of this ReadMe.
-3. Deploy: It builds a docker image (using a Dockerfile) of the helloworld application build (jar file). It pushes the image to the DockerHub public registry. It pushes 2 images: one tagged with the commit ID, and another one tagged as 'latest'. It triggers the lambda function (this is intended to notify Kubernetes cluster so it pulls the new 'latest' image. Finally it removes the local docker images. 
+1. **Build**: Executes gradle build, creating a jar file that contains the Spring Boot application.
+2. **Test**: Runs automated tests. In this case it only executes the simple test mentioned in the beginning of this ReadMe.
+3. **Deploy**: It builds a docker image (using a Dockerfile) of the helloworld application build (jar file). It pushes the image to the DockerHub public registry. It pushes 2 images: one tagged with the commit ID, and another one tagged as 'latest'. It triggers the lambda function (this is intended to notify Kubernetes cluster so it pulls the new 'latest' image. Finally it removes the local docker images. 
 
-This last step (Deploy) only is executed if the branch is 'main', because usually a commit to the main branch of a repository means that it is a version ready for production deployment. Other branches could be configured too. For example, a commit from 'develop' could trigger a deployment to a UAT environment.
+This last step (Deploy) is only executed if the branch is 'main', because usually a commit to the main branch of a repository means that it is a version ready for production deployment. Other branches could be configured too. For example, a commit from 'develop' could trigger a deployment to a UAT environment.
 
 **NOTE:** As it is mentioned in the Jenkinsfile, every pipeline workload should be executed from within an isolated node, as it is considered a best practice. In this case, as the Free Tier EC2 instance resources were so limited, I didn't follow this practice. Also, in a real environment it would be advisable to deploy the Jenkins server following a master-worker architecture, and execute these heavy pipeline workloads inside the worker nodes.
   
@@ -132,3 +136,5 @@ This way you will be able to see application logs as it is shown in the image.
 ## Alerting
 
 To get alerts based on different parameters of events, two things are needed: collect metrics, and create an alert based on some rule. For example, to get information about uptime of your application, you can install HeartBeat to collect these metrics, and then create a Watcher. In order to create a Watcher, you may need to upgrade your Kibana license (there is a 30 day trial available). Once your license is upgraded, you can now use Watcher feature.
+
+These Watchers cand integrate with common communication apps (e.g. Slack) so get notified every time the application goes down.
