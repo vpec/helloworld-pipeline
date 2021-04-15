@@ -153,7 +153,7 @@ Go to the Discover tab, and you will see the logs there. If you only want to see
 
 - Value: helloworld-rest-app
 
-This way you will be able to see application logs as it is shown in the image (the moment I took the screenshot I was running only 3 replicas, that's why only 3 containers appear on the left).
+This way you will be able to see application logs as it is shown in the image (the moment I took the screenshot I was running only 3 replicas, that's why only 3 pods appear on the left).
 ![visualization of application logs !](images/kibana_app_logs.png)
 
 ### Alerting
