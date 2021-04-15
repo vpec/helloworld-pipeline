@@ -1,106 +1,58 @@
 resource "aws_vpc" "development-vpc" {
-  cidr_block           = "${var.vpc_cidr}"
+  cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
   tags = {
-    Name = "${var.environment}-VPC"
+    Name = "Development-VPC"
   }
 }
 resource "aws_subnet" "public-subnet-1" {
-  cidr_block        = "${var.public_subnet_1_cidr}"
+  cidr_block        = "10.0.1.0/24"
   vpc_id            = "${aws_vpc.development-vpc.id}"
-  availability_zone = "${var.region}a"
+  availability_zone = "us-east-2a"
   tags = {
-    Name = "${var.environment}-Public-Subnet-1"
-  }
-}
-resource "aws_subnet" "public-subnet-2" {
-  cidr_block        = "${var.public_subnet_2_cidr}"
-  vpc_id            = "${aws_vpc.development-vpc.id}"
-  availability_zone = "${var.region}b"
-  tags = {
-    Name = "${var.environment}-Public-Subnet-2"
-  }
-}
-resource "aws_subnet" "public-subnet-3" {
-  cidr_block        = "${var.public_subnet_3_cidr}"
-  vpc_id            = "${aws_vpc.development-vpc.id}"
-  availability_zone = "${var.region}c"
-  tags = {
-    Name = "${var.environment}-Public-Subnet-3"
+    Name = "Development-Public-Subnet-1"
   }
 }
 resource "aws_route_table" "public-route-table" {
   vpc_id = "${aws_vpc.development-vpc.id}"
   tags = {
-    Name = "${var.environment}-Public-RouteTable"
+    Name = "Development-Public-RouteTable"
   }
 }
 resource "aws_route_table_association" "public-route-1-association" {
   route_table_id = "${aws_route_table.public-route-table.id}"
   subnet_id      = "${aws_subnet.public-subnet-1.id}"
 }
-resource "aws_route_table_association" "public-route-2-association" {
-  route_table_id = "${aws_route_table.public-route-table.id}"
-  subnet_id      = "${aws_subnet.public-subnet-2.id}"
-}
-resource "aws_route_table_association" "public-route-3-association" {
-  route_table_id = "${aws_route_table.public-route-table.id}"
-  subnet_id      = "${aws_subnet.public-subnet-3.id}"
-}
 resource "aws_subnet" "private-subnet-1" {
-  cidr_block        = "${var.private_subnet_1_cidr}"
+  cidr_block        = "10.0.10.0/24"
   vpc_id            = "${aws_vpc.development-vpc.id}"
-  availability_zone = "${var.region}a"
+  availability_zone = "us-east-2a"
   tags = {
-    Name = "${var.environment}-Private-Subnet-1"
-  }
-}
-resource "aws_subnet" "private-subnet-2" {
-  cidr_block        = "${var.private_subnet_2_cidr}"
-  vpc_id            = "${aws_vpc.development-vpc.id}"
-  availability_zone = "${var.region}b"
-  tags = {
-    Name = "${var.environment}-Private-Subnet-2"
-  }
-}
-resource "aws_subnet" "private-subnet-3" {
-  cidr_block        = "${var.private_subnet_3_cidr}"
-  vpc_id            = "${aws_vpc.development-vpc.id}"
-  availability_zone = "${var.region}c"
-  tags = {
-    Name = "${var.environment}-Private-Subnet-3"
+    Name = "Development-Private-Subnet-1"
   }
 }
 resource "aws_route_table" "private-route-table" {
   vpc_id = "${aws_vpc.development-vpc.id}"
   tags = {
-    Name = "${var.environment}-Private-RouteTable"
+    Name = "Development-Private-RouteTable"
   }
 }
 resource "aws_route_table_association" "private-route-1-association" {
   route_table_id = "${aws_route_table.private-route-table.id}"
   subnet_id      = "${aws_subnet.private-subnet-1.id}"
 }
-resource "aws_route_table_association" "private-route-2-association" {
-  route_table_id = "${aws_route_table.private-route-table.id}"
-  subnet_id      = "${aws_subnet.private-subnet-2.id}"
-}
-resource "aws_route_table_association" "private-route-3-association" {
-  route_table_id = "${aws_route_table.private-route-table.id}"
-  subnet_id      = "${aws_subnet.private-subnet-3.id}"
-}
 resource "aws_eip" "elastic-ip-for-nat-gw" {
   vpc                       = true
   associate_with_private_ip = "10.0.0.5"
   tags = {
-    Name = "${var.environment}-EIP"
+    Name = "Development-EIP"
   }
 }
 resource "aws_nat_gateway" "nat-gw" {
   allocation_id = "${aws_eip.elastic-ip-for-nat-gw.id}"
   subnet_id     = "${aws_subnet.public-subnet-1.id}"
   tags = {
-    Name = "${var.environment}-NATGW"
+    Name = "Development-NATGW"
   }
   depends_on = ["aws_eip.elastic-ip-for-nat-gw"]
 }
@@ -112,7 +64,7 @@ resource "aws_route" "nat-gw-route" {
 resource "aws_internet_gateway" "development-igw" {
   vpc_id = "${aws_vpc.development-vpc.id}"
   tags = {
-    Name = "${var.environment}-IGW"
+    Name = "Development-IGW"
   }
 }
 resource "aws_route" "public-internet-igw-route" {
@@ -120,4 +72,3 @@ resource "aws_route" "public-internet-igw-route" {
   gateway_id             = "${aws_internet_gateway.development-igw.id}"
   destination_cidr_block = "0.0.0.0/0"
 }
-
