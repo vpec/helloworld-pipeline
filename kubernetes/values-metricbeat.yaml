@@ -1,0 +1,19 @@
+daemonset:
+  enabled: false
+
+deployment:
+  config:
+    setup.template.name: "kubernetes_events"
+    setup.template.pattern: "kubernetes_events-*"
+    output.elasticsearch:
+      hosts: ["http://10.0.2.2:9200"]
+      index: "kubernetes_events-%{[beat.version]}-%{+yyyy.MM.dd}"
+    output.file:
+      enabled: false
+  modules:
+    kubernetes:
+      enabled: true
+      config:
+        - module: kubernetes
+          metricsets:
+            - event
