@@ -1,4 +1,4 @@
-# helloworld-pipeline: Automated CI/CD pipeline and Kubernetes deployment for a helloworld Rest app
+# helloworld-pipeline: Automated CI/CD pipeline ending in Kubernetes deployment
 
 The purpose of this repository is to create a **continuous integration and continuous deployment pipeline** for a helloworld application, ending with a **Kubernetes deployment**. 
 
@@ -12,6 +12,7 @@ The main elements are located in the following folders:
 **IMPORTANT NOTES**
 1. This project has been created and tested on a Linux host machine (Debian 10). Some commands, scripts or steps may differ if you are running a different OS on your machine.
 2. Currently new AWS accounts have a limited amount of cpu instances that can be active at the same time: just 1 cpu instance. Changing this limit takes some time as you need to talk to technical support in order to get it changed. The initial idea of this project was to deploy the different parts (CI/CD pipeline and Kubernetes cluster) to AWS, so the integration between them would be easier. As this has not been possible due to the limitation, some parts of the resulting system are not completely integrated. For example, instead of running the Kubernetes cluster in Amazon EKS, I have used minikube to deploy a local cluster. 
+3. Although I was familiar with many of the concepts applied in this project and I had hands-on experience with some of them (SpringBoot REST APIs, containers, CI tools, monitarization...), this is my first hands-on experience using Terraform, Jenkins, AWS, Kubernetes, Minikube, ElasticSearch, FluentD and Kibana. The scripts and manifests included in this repo may not follow all the best practices as this project has been made in limited time, so please be kind :)
 
 ## HelloWorld REST application
 
@@ -34,7 +35,7 @@ Once `terraform apply` finishes, it will print the URL to access the EC2 instanc
 
 To run this commands you have to configure first `the home/user/.aws/credentials` file, as you need some credentials to deploy to AWS.
 
-The Terraform manifests also include a script (_install_jenkins.sh.tpl_) that is injected into the EC2 instance, which is executed right after being deployed. This script installs Jenkins and Docker in the virtual machine, and creates a Jenkins service.
+The Terraform manifests also include a script (*install_jenkins.sh.tpl*) that is injected into the EC2 instance, which is executed right after being deployed. This script installs Jenkins and Docker in the virtual machine, and creates a Jenkins service.
 
 However, some manual steps have to be done once the instance is deployed in order to create the pipeline: 
 
@@ -66,9 +67,15 @@ This last step (Deploy) is only executed if the branch is 'main', because usuall
 
 **NOTE:** As it is mentioned in the Jenkinsfile, every pipeline workload should be executed from within an isolated node, as it is considered a best practice. In this case, as the Free Tier EC2 instance resources were so limited, I didn't follow this practice. Also, in a real environment it would be advisable to deploy the Jenkins server following a master-worker architecture, and execute these heavy pipeline workloads inside the worker nodes.
   
-Lambda Function: The role of the lambda function here is to trigger Kubernetes cluster update. The initial idea was to deploy the Kubernetes cluster into Amazon EKS (Elastic Kubernetes Service), but because of the limitations of cpu instances in new AWS accounts I couldn't test it. Deploying to EKS would get greater integration between the lambda function, Jenkins server and the cluster. At this moment, this trigger is not implemented. The function contains simply a hello world handler in NodeJS. The idea would be to execute `kubectl apply -f deployment.yaml`, so the new helloworld-rest-app:latest images would be deployed into the cluster.
+###### CD using AWS Lambda:
+
+The role of the lambda function here is to trigger Kubernetes cluster update. The initial idea was to deploy the Kubernetes cluster into Amazon EKS (Elastic Kubernetes Service), but because of the limitations related to cpu instances in new AWS accounts I couldn't test it. Deploying to EKS would get greater integration between the lambda function, Jenkins server and the cluster. At this moment, this trigger is not implemented. The function contains simply a hello world handler in NodeJS.
 
 ![Lambda function execution!](images/lambda_call.png)
+
+The idea would be to connect to the cluster and execute `kubectl set image deploy helloworld-rest-app helloworld-rest-app=vpec1/helloworld-rest-app:latest`, so the new image would be forced to rollout into the cluster. After that, you can check the new image is deployed properly checking the rollout status and rollout history on your Kubernetes cluster.
+
+After that, you could run some automated tests in the production environment to double-check the deployment went well. In the *test* folder there is a simple endpoint test (*endpoint-test.sh*) written in Bash (definitely not the best testing framework :P)
 
 ## Kubernetes deployment
 
@@ -103,7 +110,7 @@ Deploy fluentd daemonset to the minikube cluster.
 $ kubectl apply -f kubernetes/fluentd-daemonset.yaml
 ```
 
-Deploy the helloworld app to the minikube active cluster. This manifest deploys 3 replicas of the helloworld app.
+Deploy the helloworld app to the minikube active cluster. This manifest deploys 5 replicas of the helloworld app.
 ```
 $ kubectl apply -f kubernetes/helloworld-deployment.yaml
 ```
@@ -128,7 +135,7 @@ $ ./multi-request.sh <NUM_REQUESTS> <ENDPOINT>
 
 One important question is whether we are going to be able to visualize the application logs (the ones generated by the Spring Boot application) and how to do it. This helloworld application prints its logs to output stream `stdout`, following [logging best practices](https://12factor.net/logs). The docker container also prints its logs to output stream, so it prints the application logs. Finally, these container logs are gathered and presented in a centralized way, so there's no need to check the specific logs of each running pod.
 
-To manage logging and monitoring, we are using the EFK stack. In the previous steps, we deployed  ElasticSearch and Kibana using docker-compose, and also FluentD was deployed as a daemonset to the cluster. These 3 elements are going to be used to collect logs, process them, and visualize them in a Kibana local server.
+To manage logging and monitoring, we are using the **EFK stack**. In the previous steps, we deployed  ElasticSearch and Kibana using docker-compose, and also FluentD was deployed as a daemonset to the cluster. These 3 elements are going to be used to collect logs, process them, and visualize them in a Kibana local server.
 
 If you have followed the deployment steps, now enter Kibana (http://localhost:8083) and create an index pattern. (Note that it is not the default port for Kibana. The default one gave me some problems when trying to connect via browser, so it is changed to 8083 in the manifests).
 

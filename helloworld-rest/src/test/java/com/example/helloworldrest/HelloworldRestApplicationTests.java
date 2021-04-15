@@ -11,10 +11,6 @@ import com.example.helloworldrest.controller.*;
 class HelloworldRestApplicationTests {
 
 	@Test
-	void contextLoads() {
-	}
-
-	@Test
     public void testHelloworldController() {
         HelloworldController helloworldController = new HelloworldController();
         String result = helloworldController.hello();

@@ -9,9 +9,9 @@ data "archive_file" "lambda_zip" {
 resource "aws_lambda_function" "lambda_deployment_trigger" {
   filename         = "lambda_function_code.zip"
   function_name    = "lambda_deployment_trigger"
-  role             = "${aws_iam_role.iam_for_lambda_tf.arn}"
+  role             = aws_iam_role.iam_for_lambda_tf.arn
   handler          = "lambda_function_code.handler"
-  source_code_hash = "${data.archive_file.lambda_zip.output_base64sha256}"
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   runtime          = "nodejs12.x"
 }
 
